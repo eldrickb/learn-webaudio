@@ -1,64 +1,94 @@
 
+import saw from "./wave-tables/01_Saw.js"
+console.log("loaded")
+
 // 1 CONTEXT SETUP
 
 // 1.1 SOURCE
 const AudioContext = window.AudioContext || window.webkitAudioContext;
-const audioContext = new AudioContext();
-
-// get the audio element
-const audioElement = document.querySelector('audio');
-
-// pass it into the audio context
-const track = audioContext.createMediaElementSource(audioElement);
+const audioCtx = new AudioContext();
 
 
-// 1.2 GAIN
-const gainNode = audioContext.createGain();
+// 1.2 SWEEP
 
-// 1.3 PAN
-const pannerOptions = { pan: 0 };
-const panner = new StereoPannerNode(audioContext, pannerOptions);
+const wave = audioCtx.createPeriodicWave(saw.real, saw.imag);
 
-// 1.4 DEST 
+let sweepLength = 2;
+function playSweep(time) {
+    // init osc 
+    let osc = audioCtx.createOscillator();
+    osc.setPeriodicWave(wave);
+    osc.frequency.value = 440;
 
-// connect to dest
-track
-    .connect(gainNode)
-    .connect(panner)
-    .connect(audioContext.destination);
+    // sweep gain environment
+    let sweepEnv = audioCtx.createGain();
+    sweepEnv.gain.cancelScheduledValues(time);
+    sweepEnv.gain.setValueAtTime(0, time);
+    // set our attack
+    sweepEnv.gain.linearRampToValueAtTime(1, time + attackTime);
+    // set our release
+    sweepEnv.gain.linearRampToValueAtTime(0, time + sweepLength - releaseTime);
+
+    // osc -> env -> dest
+    osc.connect(sweepEnv).connect(audioCtx.destination);
+    osc.start(time);
+    osc.stop(time + sweepLength);
+}
+
+// 1.3 Pulse
+let pulseTime = 1;
+function playPulse(time) {
+    // sine pulse wave 
+    let osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = pulseHz;
+
+    // amp env for pulse
+    let amp = audioCtx.createGain();
+    amp.gain.value = 1;
+
+    // lfo to modulate amp
+    let lfo = audioCtx.createOscillator();
+    lfo.type = 'square';
+    lfo.frequency.value = lfoHz;
+
+    // connect gain lfo
+    lfo.connect(amp.gain);
+    // connect osc to amp to dest
+    osc.connect(amp).connect(audioCtx.destination);
+    lfo.start();
+    osc.start(time);
+    osc.stop(time + pulseTime);
+}
+
 
 // 2. CONTROLS
 
-// 2.1 PLAY BUTTON
+// 2.1 ATTACK 
 
-// select our play button
-const playButton = document.querySelector('button');
-playButton.addEventListener('click', function() {
-
-    // check if context is in suspended state (autoplay policy)
-    if (audioContext.state === 'suspended') {
-        audioContext.resume();
-    }
-
-    // play or pause track depending on state
-    if (this.dataset.playing === 'false') {
-        audioElement.play();
-        this.dataset.playing = 'true';
-    } else if (this.dataset.playing === 'true') {
-        audioElement.pause();
-        this.dataset.playing = 'false';
-    }
-
+let attackTime = 0.2;
+const attackControl = document.querySelector('#attack');
+attackControl.addEventListener('input', function () {
+    attackTime = Number(this.value);
 }, false);
 
-// 2.2 GAIN 
-const volumeControl = document.querySelector('#volume');
-volumeControl.addEventListener('input', function() {
-    gainNode.gain.value = this.value;
+// 2.2 RELEASE
+let releaseTime = 0.5;
+const releaseControl = document.querySelector('#release');
+releaseControl.addEventListener('input', function () {
+    releaseTime = Number(this.value);
 }, false);
 
-// 2.3 PAN
-const pannerControl = document.querySelector('#panner');
-pannerControl.addEventListener('input', function() {
-    panner.pan.value = this.value;
+// 2.3 pulse
+let pulseHz = 880;
+const hzControl = document.querySelector('#hz');
+hzControl.addEventListener('input', function () {
+    pulseHz = Number(this.value);
+}, false);
+
+// 2.4 lfo
+let lfoHz = 30;
+const lfoControl = document.querySelector('#lfo');
+lfoControl.addEventListener('input', function () {
+    lfoHz = Number(this.value);
 }, false);
