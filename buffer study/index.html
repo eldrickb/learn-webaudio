@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+    <h1>hi hello ho</h1>
+
+    <input type="file" accept="audio/*" capture id="recorder" />  
+    <audio id="player" controls></audio>  
+        <script>  
+            const recorder = document.getElementById('recorder');  
+            const player = document.getElementById('player');  
+            
+            recorder.addEventListener('change', function (e) {  
+                const file = e.target.files[0];  
+                const url = URL.createObjectURL(file);  
+                console.log(file)
+                // Do something with the audio file.  
+                player.src = url;  
+            });  
+        </script>  
+    </audio>
+
+
+    <!-- Get an audio file, import to context -->
+
+
+    <audio src="bonobo.mp3"></audio>
+
+    <button data-playing="false" role="switch" aria-checked="false">
+        <span>Play/Pause</span>
+    </button>
+
+    <!-- Input audio controls -->
+
+    <div>
+        <span>GAIN</span>
+        <input type="range" id="volume" min="0" max="2" value="1" step="0.01">
+    </div>
+
+    <div>
+        <span>PAN</span>
+        <input type="range" id="panner" min="-1" max="1" value="0" step="0.01">
+    </div>
+
+    <script type="module" src="index.js"></script>
+</body>
+
+</html>

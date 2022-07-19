@@ -61,9 +61,9 @@ function playPulse(time) {
     osc.stop(time + pulseTime);
 }
 
-
 // 2. CONTROLS
 
+// !!! basic adsr attempt 
 // 2.1 ATTACK 
 
 let attackTime = 0.2;
